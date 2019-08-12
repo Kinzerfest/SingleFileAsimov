@@ -1,38 +1,103 @@
 package org.minutebots.frc2019;
 
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
+import com.kauailabs.navx.frc.AHRS;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.buttons.JoystickButton;
+import edu.wpi.first.wpilibj.drive.MecanumDrive;
 
 public class Robot extends TimedRobot {
-  /**
-   * This function is run when the robot is first started up and should be used
-   * for any initialization code.
-   */
-  @Override
-  public void robotInit() {
-  }
 
-  @Override
-  public void autonomousInit() {
-  }
+  private Joystick joystick = new Joystick(0);
+  private AHRS gyro = new AHRS(SPI.Port.kMXP);
 
-  @Override
-  public void autonomousPeriodic() {
-  }
+  private JoystickButton resetGyro = new JoystickButton(joystick, 10);
+  private JoystickButton yeetForwards = new JoystickButton(joystick,7),
+          yeetBackwards = new JoystickButton(joystick,9);
+  private JoystickButton grabHatch = new JoystickButton(joystick,3),
+          ejectHatch = new JoystickButton(joystick,5);
+  private JoystickButton lockBall = new JoystickButton(joystick,4),
+          ejectBall = new JoystickButton(joystick,6);
 
-  @Override
-  public void teleopInit() {
-  }
+  private Runnable driveTrain = new Runnable() { //TODO: Add vision functionality
+    private WPI_VictorSPX leftFront = new WPI_VictorSPX(0),
+            rightFront = new WPI_VictorSPX(1),
+            leftBack = new WPI_VictorSPX(3),
+            rightBack = new WPI_VictorSPX(2);
+    private MecanumDrive mecanumDrive = new MecanumDrive(leftFront, leftBack, rightFront, rightBack);
+    public void run() {
+      if(resetGyro.get()) gyro.reset();
+      mecanumDrive.driveCartesian(joystick.getX(), -joystick.getY(), joystick.getTrigger() ? 0.6:0, gyro.getAngle());
+    }
+  };
 
-  @Override
+  private Runnable depotArm = new Runnable() {
+    private boolean isDown = false;
+
+    private WPI_TalonSRX armMotor = new WPI_TalonSRX(4), //TODO: Change Port
+            wheelMotor = new WPI_TalonSRX(5);
+
+    private DigitalInput upLimit = new DigitalInput(0), //These are reversed
+            downLimit = new DigitalInput(1);
+
+    private void moveArm(double speed) {
+      double motorSpeed = speed;
+      if (upLimit.get()) motorSpeed = speed < 0 ? speed : 0;
+      if (downLimit.get()) motorSpeed = speed > 0 ? speed : 0;
+      armMotor.set(motorSpeed);
+    }
+
+    private void spinWheel(double speed) {
+      wheelMotor.set(speed);
+    }
+
+    public void run() {
+      if (isDown) moveArm(-0.2); //depot arm goes down
+      else moveArm(0.2); //black hawk going up
+      if(yeetForwards.get() || yeetBackwards.get()){
+        isDown = true;
+        spinWheel((yeetForwards.get() ? 1 : -1) * -1.0);
+      } else {
+        isDown = false;
+        spinWheel(0);
+      }
+    }
+  };
+
+  private Runnable hatchMech = new Runnable() {
+    private DoubleSolenoid piston = new DoubleSolenoid(6, 7),
+            activeHatch = new DoubleSolenoid(4, 5);
+
+    public void run() {
+      if(grabHatch.get()) activeHatch.set(DoubleSolenoid.Value.kForward);
+      else activeHatch.set(DoubleSolenoid.Value.kReverse);
+      if(ejectHatch.get()) piston.set(DoubleSolenoid.Value.kForward);
+      else piston.set(DoubleSolenoid.Value.kReverse);
+    }
+  };
+
+  private Runnable ramp = new Runnable() {
+    private WPI_TalonSRX rampMotor = new WPI_TalonSRX(6); //TODO: Change Port
+    private DoubleSolenoid rampLock = new DoubleSolenoid(3, 2);
+
+    public void run() {
+      if(lockBall.get()) rampLock.set(DoubleSolenoid.Value.kForward);
+      if(ejectBall.get()){
+        rampLock.set(DoubleSolenoid.Value.kReverse);
+        rampMotor.set(0.3);
+      } else rampMotor.set(0.0);
+    }
+  };
+
   public void teleopPeriodic() {
+    driveTrain.run();
+    depotArm.run();
+    hatchMech.run();
+    ramp.run();
   }
-
-  @Override
-  public void testInit() {
-  }
-
-  @Override
-  public void testPeriodic() {
-  }
-
 }
