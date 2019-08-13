@@ -1,13 +1,8 @@
 package org.minutebots.frc2019;
 
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.kauailabs.navx.frc.AHRS;
-import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 
@@ -32,15 +27,15 @@ public class Robot extends TimedRobot {
     private MecanumDrive mecanumDrive = new MecanumDrive(leftFront, leftBack, rightFront, rightBack);
     public void run() {
       if(resetGyro.get()) gyro.reset();
-      mecanumDrive.driveCartesian(joystick.getX(), -joystick.getY(), joystick.getTrigger() ? 0.6:0, gyro.getAngle());
+      mecanumDrive.driveCartesian(joystick.getX(), -joystick.getY(), joystick.getTrigger() ? 0.6*joystick.getTwist():0, gyro.getAngle());
     }
   };
 
   private Runnable depotArm = new Runnable() {
     private boolean isDown = false;
 
-    private WPI_TalonSRX armMotor = new WPI_TalonSRX(4), //TODO: Change Port
-            wheelMotor = new WPI_TalonSRX(5);
+    private SpeedController wheelMotor = new VictorSP(0),
+            armMotor = new Spark(2);
 
     private DigitalInput upLimit = new DigitalInput(0), //These are reversed
             downLimit = new DigitalInput(1);
@@ -82,7 +77,7 @@ public class Robot extends TimedRobot {
   };
 
   private Runnable ramp = new Runnable() {
-    private WPI_TalonSRX rampMotor = new WPI_TalonSRX(6); //TODO: Change Port
+    private VictorSP rampMotor = new VictorSP(2);
     private DoubleSolenoid rampLock = new DoubleSolenoid(3, 2);
 
     public void run() {
