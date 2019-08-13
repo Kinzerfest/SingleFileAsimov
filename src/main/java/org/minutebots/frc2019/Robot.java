@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
     private boolean isDown = false;
 
     private SpeedController wheelMotor = new VictorSP(0),
-            armMotor = new Spark(2);
+            armMotor = new Spark(1);
 
     private DigitalInput upLimit = new DigitalInput(0), //These are reversed
             downLimit = new DigitalInput(1);
