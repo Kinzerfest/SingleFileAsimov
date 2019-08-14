@@ -27,7 +27,7 @@ public class Robot extends TimedRobot {
     private MecanumDrive mecanumDrive = new MecanumDrive(leftFront, leftBack, rightFront, rightBack);
     public void run() {
       if(resetGyro.get()) gyro.reset();
-      mecanumDrive.driveCartesian(joystick.getX(), -joystick.getY(), joystick.getTrigger() ? 0.6*joystick.getTwist():0, gyro.getAngle());
+      mecanumDrive.driveCartesian(joystick.getX(), -joystick.getY(), joystick.getTrigger() ? 0.6*joystick.getTwist():0, -gyro.getAngle());
     }
   };
 
